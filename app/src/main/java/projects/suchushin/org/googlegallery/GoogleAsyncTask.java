@@ -1,25 +1,29 @@
 package projects.suchushin.org.googlegallery;
 
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
+
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 
-public class GoogleAsyncTask extends AsyncTask<String, Void, String> {
+public class GoogleAsyncTask extends AsyncTask<String, Void, List<Bitmap>> {
     private final static String API_KEY = "AIzaSyBJOeuh-fFR5OpNuPdWCxo8WQZTE1wT4jw";
     private final static String CX = "004619996681643827902:o4zpeun436o";
     private final static String SEARCH_LINK = "https://www.googleapis.com/customsearch/v1";
-    private OnTaskCompleted onTaskCompleted;
+    private TaskWork taskWork;
 
-    GoogleAsyncTask(OnTaskCompleted onTaskCompleted){
-        this.onTaskCompleted = onTaskCompleted;
+    GoogleAsyncTask(TaskWork taskWork){
+        this.taskWork = taskWork;
     }
 
     @Override
-    protected String doInBackground(String... strings) {
+    protected List<Bitmap> doInBackground(String... strings) {
         String query = strings[0];
         try{
             URL url = fullSearchURL(query);
@@ -33,7 +37,7 @@ public class GoogleAsyncTask extends AsyncTask<String, Void, String> {
                 buffer.append(line);
             }
 
-            return buffer.toString();
+            return taskWork.onTaskRunning(buffer.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -41,9 +45,9 @@ public class GoogleAsyncTask extends AsyncTask<String, Void, String> {
     }
 
     @Override
-    protected void onPostExecute(String result) {
-        super.onPostExecute(result);
-        onTaskCompleted.onTaskCompleted(result);
+    protected void onPostExecute(List<Bitmap> imageList) {
+        super.onPostExecute(imageList);
+        taskWork.onCompleted(imageList);
     }
 
     private URL fullSearchURL(String query){

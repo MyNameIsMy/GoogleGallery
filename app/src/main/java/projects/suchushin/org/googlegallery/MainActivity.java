@@ -5,12 +5,14 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.view.View;
 import android.widget.EditText;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.Target;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,9 +21,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-public class MainActivity extends AppCompatActivity implements OnTaskCompleted{
-    private static final int NUMBER_OF_IMAGES_COLUMNS = 4;
+public class MainActivity extends AppCompatActivity implements TaskWork {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +32,8 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted{
 
         if (savedInstanceState != null){
             List<Bitmap> savedImages = new ArrayList<>();
-            extractImagesFromCache(this, savedImages);
-            setGridOfImage(null, savedImages);
+            extractImagesFromCache(savedImages);
+            setGridOfImage(savedImages);
         } else {
             cleanCache(this);
         }
@@ -48,25 +50,46 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted{
     }
 
     @Override
-    public void onTaskCompleted(String result) {
+    public List<Bitmap> onTaskRunning(String result) {
         try {
-            List<String> resultList = new ArrayList<>();
+            List<Bitmap> resultList = new ArrayList<>();
             JSONObject object = new JSONObject(result);
             JSONArray array = object.getJSONArray("items");
             for (int i = 0; i < array.length(); i++){
                 JSONObject o = array.getJSONObject(i);
-                resultList.add(o.getString("link"));
+                Bitmap image = downloadImage(o.getString("link"));
+                resultList.add(image);
             }
-            setGridOfImage(resultList, null);
+            return resultList;
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
-    private void setGridOfImage(List<String> imageURLList, List<Bitmap> savedImages){
+    @Override
+    public void onCompleted(List<Bitmap> imageList) {
+        setGridOfImage(imageList);
+    }
+
+    private Bitmap downloadImage(String link){
+        try {
+            return Glide.with(this).load(link).asBitmap().into(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void setGridOfImage(List<Bitmap> imageList){
         RecyclerView recyclerView = findViewById(R.id.grid_of_images);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, NUMBER_OF_IMAGES_COLUMNS));
-        recyclerView.setAdapter(new MasonryRecycleViewAdapter(this, imageURLList, savedImages));
+        if (getResources().getConfiguration().orientation == 1)
+            recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, OrientationHelper.VERTICAL));
+        else
+            recyclerView.setLayoutManager(new StaggeredGridLayoutManager(4, OrientationHelper.VERTICAL));
+        recyclerView.setAdapter(new MasonryRecycleViewAdapter(this, imageList));
     }
 
     void cleanCache(Context context){
@@ -76,8 +99,8 @@ public class MainActivity extends AppCompatActivity implements OnTaskCompleted{
         }
     }
 
-    void extractImagesFromCache(Context context, List<Bitmap> savedImages){
-        File cacheDir =  Glide.getPhotoCacheDir(context);
+    void extractImagesFromCache(List<Bitmap> savedImages){
+        File cacheDir =  Glide.getPhotoCacheDir(this);
         for (File imgF : cacheDir.listFiles()){
             if (!imgF.getName().equals("journal")){
                 Bitmap imgB = BitmapFactory.decodeFile(imgF.getAbsolutePath());
