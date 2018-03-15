@@ -17,9 +17,11 @@ public class GoogleAsyncTask extends AsyncTask<String, Void, List<Bitmap>> {
     private final static String CX = "004619996681643827902:o4zpeun436o";
     private final static String SEARCH_LINK = "https://www.googleapis.com/customsearch/v1";
     private TaskWork taskWork;
+    private int start;
 
-    GoogleAsyncTask(TaskWork taskWork){
+    GoogleAsyncTask(TaskWork taskWork, int start){
         this.taskWork = taskWork;
+        this.start = start;
     }
 
     @Override
@@ -47,7 +49,8 @@ public class GoogleAsyncTask extends AsyncTask<String, Void, List<Bitmap>> {
     @Override
     protected void onPostExecute(List<Bitmap> imageList) {
         super.onPostExecute(imageList);
-        taskWork.onCompleted(imageList);
+        if (imageList != null)
+            taskWork.onCompleted(imageList, start);
     }
 
     private URL fullSearchURL(String query){
@@ -60,6 +63,8 @@ public class GoogleAsyncTask extends AsyncTask<String, Void, List<Bitmap>> {
         stringURL += "&alt=json";
 
         stringURL += "&searchType=image";
+
+        stringURL += "&start=" + start;
 
         stringURL += "&q=" + query;
 

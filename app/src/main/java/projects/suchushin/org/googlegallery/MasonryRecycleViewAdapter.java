@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import java.util.Collections;
 import java.util.List;
 
 public class MasonryRecycleViewAdapter extends RecyclerView.Adapter<MasonryRecycleViewAdapter.ViewHolder>{
@@ -36,7 +37,11 @@ public class MasonryRecycleViewAdapter extends RecyclerView.Adapter<MasonryRecyc
         return imageList.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder{
+    void addItems(List<Bitmap> imageList){
+        this.imageList.addAll(imageList);
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder{
         ImageView imageView;
 
         ViewHolder(View itemView) {
