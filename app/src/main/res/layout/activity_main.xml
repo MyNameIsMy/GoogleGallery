@@ -47,6 +47,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:visibility="invisible"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/grid_of_images"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="19dp" />
+
     </RelativeLayout>
 
 </ScrollView>

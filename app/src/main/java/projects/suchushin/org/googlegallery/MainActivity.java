@@ -3,37 +3,37 @@ package projects.suchushin.org.googlegallery;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RelativeLayout;
+import android.widget.ProgressBar;
 
 import com.bumptech.glide.Glide;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity implements TaskWork {
-    Glide glide;
-    RecyclerView recyclerView;
-    EditText editText;
-    Button button;
+    private Glide glide;
+    private RecyclerView recyclerView;
+    private ProgressBar progressBar;
+    private EditText editText;
+    private Button button;
+    private String lastSearchQuery;
+    private static final String LSQ_KEY = "lsq";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements TaskWork {
         ButterKnife.bind(this);
 
         if (savedInstanceState != null){
+            lastSearchQuery = savedInstanceState.getString(LSQ_KEY);
             List<Bitmap> savedImages = new ArrayList<>();
             extractImagesFromCache(savedImages);
             setGridOfImages(savedImages);
@@ -55,21 +56,30 @@ public class MainActivity extends AppCompatActivity implements TaskWork {
 
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString(LSQ_KEY, lastSearchQuery);
+        super.onSaveInstanceState(outState);
+    }
+
     @OnClick(R.id.search_button)
     public void search(){
         cleanCache();
         hideKeyboard();
         String query = String.valueOf(getEditText().getText());
+        lastSearchQuery = query;
         GoogleAsyncTask asyncTask = new GoogleAsyncTask(MainActivity.this, 1);
         asyncTask.execute(query);
+        getProgressBar().setVisibility(View.VISIBLE);
     }
 
     @OnClick(R.id.load_more_button)
     public void searchMore(){
         int start = getRecyclerView().getAdapter().getItemCount() + 1;
-        String query = String.valueOf(getEditText().getText());
         GoogleAsyncTask asyncTask = new GoogleAsyncTask(MainActivity.this, start);
-        asyncTask.execute(query);
+        asyncTask.execute(lastSearchQuery);
+        getButton().setVisibility(View.INVISIBLE);
+        getProgressBar().setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -97,6 +107,8 @@ public class MainActivity extends AppCompatActivity implements TaskWork {
         } else {
             updateGridOfImages(imageList);
         }
+        getButton().setVisibility(View.VISIBLE);
+        getProgressBar().setVisibility(View.INVISIBLE);
     }
 
     private void hideKeyboard() {
@@ -150,9 +162,8 @@ public class MainActivity extends AppCompatActivity implements TaskWork {
     }
 
     private Glide getGlide(){
-        if (glide == null) {
+        if (glide == null)
             glide = Glide.get(this);
-        }
         return glide;
     }
 
@@ -172,5 +183,11 @@ public class MainActivity extends AppCompatActivity implements TaskWork {
         if (button == null)
             button = findViewById(R.id.load_more_button);
         return button;
+    }
+
+    private ProgressBar getProgressBar(){
+        if (progressBar == null)
+            progressBar = findViewById(R.id.progressBar);
+        return progressBar;
     }
 }
